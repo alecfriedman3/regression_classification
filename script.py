@@ -133,7 +133,42 @@ def qdaTest(means,covmats,Xtest,ytest):
     # ypred - N x 1 column vector indicating the predicted labels
 
     # IMPLEMENT THIS METHOD
-    return acc,ypred
+    predictions = np.zeros(shape=(len(ytest),1))
+    k = int(y.max())
+    pi = []
+    
+    # calculate base probabilities
+    for i in range(0, k):
+        pi.append(0)
+    for yi in ytest:
+        pi[int(yi[0]) - 1] += 1
+    for i, val in enumerate(pi):
+        pi[i] = val / len(ytest)
+
+    # Make predictions
+    for i, x in enumerate(Xtest):
+        discrimnants = []
+        for classification in range(0, k):
+            sigma = covmats[classification]
+            siginv = np.linalg.inv(sigma)
+
+            u_k = []
+            for variable, value in enumerate(x):
+                u_k.append(means[variable][classification])
+            u_k = np.array(u_k)
+
+            d_k =  pi[classification] + np.matmul(np.matmul(x.T, siginv), u_k) - (np.matmul(np.matmul(u_k.T, siginv), u_k) / 2) - (np.matmul(np.matmul(x.T, siginv), x) / 2) - (np.log(np.linalg.det(sigma)) / 2)
+            discrimnants.append(d_k)
+
+        predictions[i][0] = np.argmax(discrimnants) + 1
+
+    # Calculate accuracies
+    correct = 0
+    for i, val in enumerate(predictions):
+        if val[0] == ytest[i][0]:
+            correct += 1
+    acc = correct / len(ytest)
+    return acc,predictions
 
 def learnOLERegression(X,y):
     # Inputs:                                                         
@@ -200,9 +235,9 @@ means,covmat = ldaLearn(X,y)
 ldaacc,ldares = ldaTest(means,covmat,Xtest,ytest)
 print('LDA Accuracy = '+str(ldaacc))
 # QDA
-# means,covmats = qdaLearn(X,y)
-# qdaacc,qdares = qdaTest(means,covmats,Xtest,ytest)
-# print('QDA Accuracy = '+str(qdaacc))
+means,covmats = qdaLearn(X,y)
+qdaacc,qdares = qdaTest(means,covmats,Xtest,ytest)
+print('QDA Accuracy = '+str(qdaacc))
 
 # plotting boundaries
 x1 = np.linspace(-5,20,100)
@@ -217,14 +252,14 @@ plt.subplot(1, 2, 1)
 
 zacc,zldares = ldaTest(means,covmat,xx,np.zeros((xx.shape[0],1)))
 plt.contourf(x1,x2,zldares.reshape((x1.shape[0],x2.shape[0])),alpha=0.3)
-plt.scatter(Xtest[:,0],Xtest[:,1],c=ytest)
+plt.scatter(Xtest[:,0],Xtest[:,1],c=ytest.flatten())
 plt.title('LDA')
 
 plt.subplot(1, 2, 2)
 
 zacc,zqdares = qdaTest(means,covmats,xx,np.zeros((xx.shape[0],1)))
 plt.contourf(x1,x2,zqdares.reshape((x1.shape[0],x2.shape[0])),alpha=0.3)
-plt.scatter(Xtest[:,0],Xtest[:,1],c=ytest)
+plt.scatter(Xtest[:,0],Xtest[:,1],c=ytest.flatten())
 plt.title('QDA')
 
 plt.show()
