@@ -8,6 +8,41 @@ import matplotlib.pyplot as plt
 import pickle
 import sys
 
+def calculateMeans(X,y):
+    counts = {}
+    means = np.zeros(shape=(len(X[0]), int(y.max())))
+    for i, x in enumerate(X):
+        label = int(y[i][0]) - 1
+        if label not in counts:
+            counts[label] = 0
+        counts[label] += 1
+        for j, attr in enumerate(x):
+            means[j][label] += attr
+    for i, attrs in enumerate(means):
+        for j, sums in enumerate(attrs):
+            means[i][j] = sums / counts[j]
+    return means
+
+def calculateCovariance(X):
+    d = len(X[0])
+
+    attrMeans = np.mean(X, axis=0)
+    variances = np.zeros(d)
+    covariance = np.zeros(shape=(d,d))
+    for i in range(0, d):
+        for j in range(0, d):
+            var_covar = 0
+            summation = 0
+            if i == j:
+                for l in range(0, d):
+                    summation += (X[l][i] - attrMeans[i]) ** 2
+            else:
+                for l in range(0, d):
+                    summation += (X[l][i] - attrMeans[i]) * (X[l][j] - attrMeans[j])
+            var_covar = summation / (d - 1)
+            covariance[i][j] = var_covar
+    return covariance
+
 def ldaLearn(X,y):
     # Inputs
     # X - a N x d matrix with each row corresponding to a training example
@@ -16,9 +51,9 @@ def ldaLearn(X,y):
     # Outputs
     # means - A d x k matrix containing learnt means for each of the k classes
     # covmat - A single d x d learnt covariance matrix 
-    
-    # IMPLEMENT THIS METHOD 
-    return means,covmat
+
+    # IMPLEMENT THIS METHOD
+    return calculateMeans(X,y),calculateCovariance(X)
 
 def qdaLearn(X,y):
     # Inputs
@@ -30,7 +65,20 @@ def qdaLearn(X,y):
     # covmats - A list of k d x d learnt covariance matrices for each of the k classes
     
     # IMPLEMENT THIS METHOD
-    return means,covmats
+    dataByLabel = {}
+
+    for i, x in enumerate(X):
+        label = int(y[i][0]) - 1
+        if label not in dataByLabel:
+            dataByLabel[label] = []
+        dataByLabel[label].append(x)
+
+    covariances = []
+    for label in sorted(dataByLabel.keys()):
+        data = dataByLabel[label]
+        covariances.append(calculateCovariance(data))
+
+    return calculateMeans(X,y),covariances
 
 def ldaTest(means,covmat,Xtest,ytest):
     # Inputs
@@ -42,6 +90,19 @@ def ldaTest(means,covmat,Xtest,ytest):
     # ypred - N x 1 column vector indicating the predicted labels
 
     # IMPLEMENT THIS METHOD
+
+    predictions = np.zeros(shape=(len(ytest),1))
+    
+    siginv = np.linalg.inv(covmat)
+    print(covmat, siginv)
+    for i, x in enumerate(Xtest):
+        discrimnants = np.zeros(len(x))
+        for variable, value in enumerate(x):
+            u_k = means[variable]
+            discrimnants[variable] = np.matmul(np.matmul(x.T, siginv), u_k) - (np.matmul(u_k.T, siginv)) / 2 - u_k
+
+    print(Xtest, predictions)
+
     return acc,ypred
 
 def qdaTest(means,covmats,Xtest,ytest):
