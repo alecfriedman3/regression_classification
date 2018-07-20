@@ -90,20 +90,38 @@ def ldaTest(means,covmat,Xtest,ytest):
     # ypred - N x 1 column vector indicating the predicted labels
 
     # IMPLEMENT THIS METHOD
-
     predictions = np.zeros(shape=(len(ytest),1))
-    
     siginv = np.linalg.inv(covmat)
-    print(covmat, siginv)
+    k = int(y.max())
+    pi = []
+    
+    # calculate base probabilities
+    for i in range(0, k):
+        pi.append(0)
+    for yi in ytest:
+        pi[int(yi[0]) - 1] += 1
+    for i, val in enumerate(pi):
+        pi[i] = val / len(ytest)
+
+    # Make predictions
     for i, x in enumerate(Xtest):
-        discrimnants = np.zeros(len(x))
-        for variable, value in enumerate(x):
-            u_k = means[variable]
-            discrimnants[variable] = np.matmul(np.matmul(x.T, siginv), u_k) - (np.matmul(u_k.T, siginv)) / 2 - u_k
+        discrimnants = []
+        for classification in range(0, k):
+            u_k = []
+            for variable, value in enumerate(x):
+                u_k.append(means[variable][classification])
+            u_k = np.array(u_k)
+            d_k = np.matmul(np.matmul(x.T, siginv), u_k) - (np.matmul(np.matmul(u_k.T, siginv), u_k) / 2) + pi[classification]
+            discrimnants.append(d_k)
+        predictions[i][0] = np.argmax(discrimnants) + 1
 
-    print(Xtest, predictions)
-
-    return acc,ypred
+    # Calculate accuracies
+    correct = 0
+    for i, val in enumerate(predictions):
+        if val[0] == ytest[i][0]:
+            correct += 1
+    acc = correct / len(ytest)
+    return acc,predictions
 
 def qdaTest(means,covmats,Xtest,ytest):
     # Inputs
@@ -182,9 +200,9 @@ means,covmat = ldaLearn(X,y)
 ldaacc,ldares = ldaTest(means,covmat,Xtest,ytest)
 print('LDA Accuracy = '+str(ldaacc))
 # QDA
-means,covmats = qdaLearn(X,y)
-qdaacc,qdares = qdaTest(means,covmats,Xtest,ytest)
-print('QDA Accuracy = '+str(qdaacc))
+# means,covmats = qdaLearn(X,y)
+# qdaacc,qdares = qdaTest(means,covmats,Xtest,ytest)
+# print('QDA Accuracy = '+str(qdaacc))
 
 # plotting boundaries
 x1 = np.linspace(-5,20,100)
