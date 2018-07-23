@@ -25,6 +25,7 @@ def calculateMeans(X,y):
 
 def calculateCovariance(X):
     d = len(X[0])
+    N = len(X)
 
     attrMeans = np.mean(X, axis=0)
     variances = np.zeros(d)
@@ -34,12 +35,12 @@ def calculateCovariance(X):
             var_covar = 0
             summation = 0
             if i == j:
-                for l in range(0, d):
+                for l in range(0, N):
                     summation += (X[l][i] - attrMeans[i]) ** 2
             else:
-                for l in range(0, d):
+                for l in range(0, N):
                     summation += (X[l][i] - attrMeans[i]) * (X[l][j] - attrMeans[j])
-            var_covar = summation / (d - 1)
+            var_covar = summation / (N - 1)
             covariance[i][j] = var_covar
     return covariance
 
