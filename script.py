@@ -44,6 +44,18 @@ def calculateCovariance(X):
             covariance[i][j] = var_covar
     return covariance
 
+def calculatePi(y):
+    k = int(y.max())
+    pi = []
+    for i in range(0, k):
+        pi.append(0)
+    for yi in ytest:
+        pi[int(yi[0]) - 1] += 1
+    for i, val in enumerate(pi):
+        pi[i] = val / len(ytest)
+    return pi
+
+lda_pi = []
 def ldaLearn(X,y):
     # Inputs
     # X - a N x d matrix with each row corresponding to a training example
@@ -54,8 +66,13 @@ def ldaLearn(X,y):
     # covmat - A single d x d learnt covariance matrix 
 
     # IMPLEMENT THIS METHOD
+
+    # calculate base probabilities
+    global lda_pi
+    lda_pi = calculatePi(y)
     return calculateMeans(X,y),calculateCovariance(X)
 
+qda_pi = []
 def qdaLearn(X,y):
     # Inputs
     # X - a N x d matrix with each row corresponding to a training example
@@ -66,6 +83,11 @@ def qdaLearn(X,y):
     # covmats - A list of k d x d learnt covariance matrices for each of the k classes
     
     # IMPLEMENT THIS METHOD
+
+    #calculate base probabilities
+    global qda_pi
+    qda_pi = calculatePi(y)
+
     dataByLabel = {}
 
     for i, x in enumerate(X):
@@ -94,16 +116,8 @@ def ldaTest(means,covmat,Xtest,ytest):
     predictions = np.zeros(shape=(len(ytest),1))
     siginv = np.linalg.inv(covmat)
     k = int(y.max())
-    pi = []
+    global lda_pi
     
-    # calculate base probabilities
-    for i in range(0, k):
-        pi.append(0)
-    for yi in ytest:
-        pi[int(yi[0]) - 1] += 1
-    for i, val in enumerate(pi):
-        pi[i] = val / len(ytest)
-
     # Make predictions
     for i, x in enumerate(Xtest):
         discrimnants = []
@@ -112,7 +126,7 @@ def ldaTest(means,covmat,Xtest,ytest):
             for variable, value in enumerate(x):
                 u_k.append(means[variable][classification])
             u_k = np.array(u_k)
-            d_k = np.matmul(np.matmul(x.T, siginv), u_k) - (np.matmul(np.matmul(u_k.T, siginv), u_k) / 2) + pi[classification]
+            d_k = np.matmul(np.matmul(x.T, siginv), u_k) - (np.matmul(np.matmul(u_k.T, siginv), u_k) / 2) + lda_pi[classification]
             discrimnants.append(d_k)
         predictions[i][0] = np.argmax(discrimnants) + 1
 
@@ -136,15 +150,7 @@ def qdaTest(means,covmats,Xtest,ytest):
     # IMPLEMENT THIS METHOD
     predictions = np.zeros(shape=(len(ytest),1))
     k = int(y.max())
-    pi = []
-    
-    # calculate base probabilities
-    for i in range(0, k):
-        pi.append(0)
-    for yi in ytest:
-        pi[int(yi[0]) - 1] += 1
-    for i, val in enumerate(pi):
-        pi[i] = val / len(ytest)
+    global qda_pi
 
     # Make predictions
     for i, x in enumerate(Xtest):
@@ -158,7 +164,7 @@ def qdaTest(means,covmats,Xtest,ytest):
                 u_k.append(means[variable][classification])
             u_k = np.array(u_k)
 
-            d_k =  pi[classification] + np.matmul(np.matmul(x.T, siginv), u_k) - (np.matmul(np.matmul(u_k.T, siginv), u_k) / 2) - (np.matmul(np.matmul(x.T, siginv), x) / 2) - (np.log(np.linalg.det(sigma)) / 2)
+            d_k =  qda_pi[classification] + np.matmul(np.matmul(x.T, siginv), u_k) - (np.matmul(np.matmul(u_k.T, siginv), u_k) / 2) - (np.matmul(np.matmul(x.T, siginv), x) / 2) - (np.log(np.linalg.det(sigma)) / 2)
             discrimnants.append(d_k)
 
         predictions[i][0] = np.argmax(discrimnants) + 1
@@ -234,10 +240,8 @@ def mapNonLinear(x,p):
     for xi in x:
         xp_i = []
         for j in range(0, p + 1):
-            # print(xi, j, xi**j)
             xp_i.append(xi ** j)
         Xp.append(xp_i)
-    # print(Xp, p)
     return np.array(Xp)
 
 # Main script
