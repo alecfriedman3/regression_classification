@@ -177,7 +177,7 @@ def learnOLERegression(X,y):
     # y = N x 1                                                               
     # Output: 
     # w = d x 1 
-    # print(X,y)
+
     # IMPLEMENT THIS METHOD
     w = np.matmul(np.matmul(inv(np.matmul(X.T, X)), X.T), y)
     return w
@@ -191,8 +191,6 @@ def learnRidgeRegression(X,y,lambd):
     # w = d x 1                                                                
 
     # IMPLEMENT THIS METHOD      
-    # print("lambd", lambd)
-    # w = np.matmul(np.matmul( lambd * np.identity(len(X[0])) + inv(np.matmul(X.T, X)), X.T), y)
     w = np.matmul( np.matmul( inv( lambd * np.identity(len(X[0])) + np.matmul(X.T, X) ), X.T), y)
     return w
 
@@ -206,13 +204,7 @@ def testOLERegression(w,Xtest,ytest):
     
     # IMPLEMENT THIS METHOD
     N = len(Xtest)
-    mse = 0
-    for i in range(0,N):
-        mse += (y[i] - np.matmul(w.T, Xtest[i])) ** 2
-
-    # mse /= N
-    mse /= 2
-    # print("MSE,", mse)
+    mse = sum(np.square(ytest - np.dot(Xtest,w))) / N
     return mse
 
 def regressionObjVal(w, X, y, lambd):
@@ -222,30 +214,12 @@ def regressionObjVal(w, X, y, lambd):
     # lambda                                                                  
 
     # IMPLEMENT THIS METHOD                                             
-    N = len(X)
-    error = 0
-    for i in range(0,N):
-        error += (y[i] - np.matmul(w.T, X[i])) ** 2
-    error /= 2
+    w = w.reshape(np.shape(w)[0],1)
+    error = sum(np.square(y - np.matmul(X, w))) / 2 + lambd * np.dot(w.T, w) / 2
+    error_grad = -1 * np.matmul(X.T, y - np.matmul(X, w)) + lambd * w
 
-    # −XT (Y − Xw) + λw 
-    # print(np.matmul(-(X.T), (y - np.matmul(X, w))))
-    d = len(w)
-    error_grad = []
-    for j in range(0, d):
-        errorgrad_j = 0
-        for i in range(0,N):
-            errorgrad_j += np.multiply(np.matmul(w.T, X[i]) - y[i], X[i][j]) + (lambd * w[j])
-        error_grad.append(errorgrad_j)
-    error_grad = np.array(error_grad).flatten()
+    return error[0], error_grad.flatten()
 
-    # error_grad = np.matmul(-(X.T), (y - np.matmul(X, w))) + lambd * w
-    # w − lambd X.T(Xw − Y)
-    # error_grad = lambd * np.matmul(X.T, np.matmul(X, w.T) - y)
-
-    # print(error_grad)
-    # print("ERROR VALUE-----------------------------------", error[0])
-    return error, error_grad
 
 def mapNonLinear(x,p):
     # Inputs:                                                                  
@@ -255,7 +229,16 @@ def mapNonLinear(x,p):
     # Xp - (N x (p+1)) 
     
     # IMPLEMENT THIS METHOD
-    return Xp
+
+    Xp = []
+    for xi in x:
+        xp_i = []
+        for j in range(0, p + 1):
+            # print(xi, j, xi**j)
+            xp_i.append(xi ** j)
+        Xp.append(xp_i)
+    # print(Xp, p)
+    return np.array(Xp)
 
 # Main script
 
@@ -347,12 +330,10 @@ mses4 = np.zeros((k,1))
 opts = {'maxiter' : 20}    # Preferred value.                                                
 w_init = np.ones((X_i.shape[1],1))
 for lambd in lambdas:
-    print("Lambda is", lambd)
     args = (X_i, y, lambd)
     w_l = minimize(regressionObjVal, w_init, jac=True, args=args,method='CG', options=opts)
     w_l = np.transpose(np.array(w_l.x))
     w_l = np.reshape(w_l,[len(w_l),1])
-    print("w_l is", w_l)
     mses4_train[i] = testOLERegression(w_l,X_i,y)
     mses4[i] = testOLERegression(w_l,Xtest_i,ytest)
     i = i + 1
@@ -373,7 +354,7 @@ plt.show()
 
 # Problem 5
 pmax = 7
-lambda_opt = 0 # REPLACE THIS WITH lambda_opt estimated from Problem 3
+lambda_opt = 0.06 # REPLACE THIS WITH lambda_opt estimated from Problem 3
 mses5_train = np.zeros((pmax,2))
 mses5 = np.zeros((pmax,2))
 for p in range(pmax):
